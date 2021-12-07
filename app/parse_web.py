@@ -1,29 +1,30 @@
 import mechanize
 from lxml import html
 import http.cookiejar as cookielib
+import config
 
 cj = cookielib.CookieJar()
 br = mechanize.Browser()
 
-addr = {1: "___",
-        2: "___",
-        3: "___"}
+addr = config.addr
 
+# список того, что будем парсить на странице
 in_stock_text = "//p[contains(@class,'stock')]/text()"
 button_text = "//button[contains(text(),'Add to basket')]"
 name_text = "//h1[contains(@class, 'product_title')]/text()"
 price_text = "//span[contains(@class, 'woocommerce-Price-amount')]/bdi/text()"
 
+# Вход на сайт с использованием 'username' и 'password'
 def logging_site():
     br.set_cookiejar(cj)
-    br.open("___")
+    br.open(config.login_addr)
     br.select_form(nr=0)
-    br.form['username-5051'] = '___'
-    br.form['user_password-5051'] = '___'
+    br.form['username-5051'] = config.user_name
+    br.form['user_password-5051'] = config.user_password
     br.submit()
     return br
 
-
+# Функция парсинга страниц для получения нужных данных
 def parse_site(parse_addr, br):
     br.open(parse_addr)
     page = br.response().read()
@@ -32,16 +33,9 @@ def parse_site(parse_addr, br):
     button_check = dom.xpath(button_text)
     name_check = dom.xpath(name_text)[0]
     price_check = dom.xpath(price_text)[0]
-
-    if in_stock_check == 'In stock' and button_check:
-        return name_check, in_stock_check, parse_addr, price_check
-    else:
-        return name_check, in_stock_check
+    return name_check, in_stock_check, price_check, button_check
 
 
 if __name__ == '__main__':
-    br = logging_site()
-    print(parse_site(addr[1], br))
-    print(parse_site(addr[2], br))
 
-
+    print('Это программа парсинг. Чтобы запустить бота, надо запустить программу atbot.py')
