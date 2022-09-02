@@ -6,20 +6,13 @@ import config
 cj = cookielib.CookieJar()
 br = mechanize.Browser()
 
-addr_ds = config.addr_ds
-
-addr_search = config.addr_search
-
-user_name = 'rabenkralle@yandex.ru'
-user_password = 'ParsePs5'
-login_addr = "https://shop.sunny.eu/login/"
+addr = config.addr
 
 # список того, что будем парсить на странице
 in_stock_text = "//p[contains(@class,'stock')]/text()"
 button_text = "//button[contains(text(),'Add to basket')]"
 name_text = "//h1[contains(@class, 'product_title')]/text()"
 price_text = "//span[contains(@class, 'woocommerce-Price-amount')]/bdi/text()"
-addr_link = "//a[contains(@class,'woocommerce-LoopProduct-link')]/@href"
 
 # Вход на сайт с использованием 'username' и 'password'
 def logging_site():
@@ -31,22 +24,11 @@ def logging_site():
     br.submit()
     return br
 
-def get_dom(parse_addr, br):
-    br.open(parse_addr)
-    page = br.response().read()
-    return html.fromstring(page)
-
-def make_addr_dict(parse_addr, br):
-    dom = get_dom(parse_addr, br)
-    addr_check = dom.xpath(addr_link)
-    addr_dict = {1: addr_ds}
-    for i in range(2, len(addr_check)+2):
-        addr_dict[i] = addr_check[i - 2]
-    return addr_dict
-
 # Функция парсинга страниц для получения нужных данных
 def parse_site(parse_addr, br):
-    dom = get_dom(parse_addr, br)
+    br.open(parse_addr)
+    page = br.response().read()
+    dom = html.fromstring(page)
     in_stock_check = dom.xpath(in_stock_text)[0]
     button_check = dom.xpath(button_text)
     name_check = dom.xpath(name_text)[0]
@@ -55,10 +37,5 @@ def parse_site(parse_addr, br):
 
 
 if __name__ == '__main__':
-    br = logging_site()
-    addr = make_addr_dict(addr_search, br)
-    # print(addr)
-    for i in range(1, len(addr)+1):
-        print(parse_site(addr[i], br))
-    # print('Это программа парсинг. Чтобы запустить бота, надо запустить программу atbot.py')
-    
+
+    print('Это программа парсинг. Чтобы запустить бота, надо запустить программу atbot.py')
