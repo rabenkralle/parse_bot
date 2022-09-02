@@ -1,4 +1,4 @@
-from parse_web import logging_site, parse_site
+from parse_web import logging_site, parse_site, make_addr_dict
 import logging
 import asyncio
 import config
@@ -20,22 +20,23 @@ dp = Dispatcher(bot)
 db = SQLighter('db.db')
 db.create()
 
-addr = config.addr
 
 
 @dp.message_handler(commands=['start', 'help'])
 async def send_welcome(message: types.Message):
+    
+    newline = "\n"
     """
     Это сообщение будет выходить при вызове команды /start или /help
     """
-    await message.reply(''' 
+    await message.reply(f''' 
     Привет. Это *****!
     Подпишись на меня и тогда тебе будут приходить сообщения о поступлении товара.
     Также в любой момент ты можешь проверить наличие товара в магазине.
-    Для этого тебе просто надо отправить сообщение с цифрой 1, 2 или 3.
-    1. ****
-    2. ****
-    3. ****
+    Для этого тебе просто надо отправить сообщение с цифрой из списка:
+    
+    {newline.join(f"{key}: {value}" for key, value in name_dict.items())}
+    
     Удачи!
                             ''')
 
@@ -51,8 +52,6 @@ async def subscribe(message: types.Message):
 
     await message.answer(
         "Вы успешно подписались на парсер!")
-
-
 
 
 # Команда отписки
@@ -74,6 +73,18 @@ def login_site():
     global br
     br = logging_site()
 
+# Функция создания словаря с адресами
+def addr_dict():
+    login_site()
+    return make_addr_dict(config.addr_search, br)
+
+# Функция создания списка товаров
+def make_name_dict(addr):
+    name_dict = {}
+    for i in range(1,len(addr) + 1 ):
+        name_check, __, __, __ = parse_site(addr[i], br)
+        name_dict[i] = name_check
+    return name_dict
 
 # Проверяем наличие товара в магазине в данный момент
 @dp.message_handler()
@@ -88,12 +99,21 @@ async def choose_parse(message: types.Message):
         except:
             name_check, in_stock_check, price_check, button_check = parse_site(addr[int(input_parse)], br)
 
-        # print(name_check, in_stock_check, addr[int(input_parse)], price_check) # для проверки вывода информации
+        print(name_check, in_stock_check, addr[int(input_parse)], price_check) # для проверки вывода информации
         await message.answer(f'{name_check} {in_stock_check} {addr[int(input_parse)]} {price_check}€')
 
     else:
         await message.answer('Вы ошиблись в выборе.')
 
+# Постоянный парсинг сайта на изменение списка товаров 
+async def addr_checker(wait_for):
+    global addr
+    await asyncio.sleep(wait_for)
+    try:
+        login_site()
+        addr = make_addr_dict(config.addr_search, br)
+    except:
+        addr = make_addr_dict(config.addr_search, br)
 
 # Постоянный парсинг сайта до момента появления товара в наличии
 async def scheduled(wait_for, addr):
@@ -109,13 +129,18 @@ async def scheduled(wait_for, addr):
             subscriptions = db.get_subscriptions()
             for s in subscriptions:
                 await bot.send_message(s[1], f'‼️‼️{name_check} {in_stock_check} {addr} {price_check}€‼️‼️')
-        # else:
-        #     print(f'none {addr}') # для проверки работы программы
+        else:
+            print(f'none {addr}') # для проверки работы программы
 
 
 
 if __name__ == '__main__':
+    addr = addr_dict()
+    name_dict = make_name_dict(addr)
+
     loop = asyncio.get_event_loop()
-    loop.create_task(scheduled(50, addr[2]))
-    loop.create_task(scheduled(50, addr[3]))
+    loop.create_task(addr_checker(200))
+    for i in range(2, len(addr)+1):
+        loop.create_task(scheduled(50, addr[i]))
+    
     executor.start_polling(dp, skip_updates=True)
