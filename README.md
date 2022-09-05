@@ -20,6 +20,9 @@ aiogram, mechanize, lxml, sqlite3, http.cookiejar
 ```
 $ git clone https://github.com/rabenkralle/parse_bot.git
 $ cd parse_bot/
+
+НЕ ЗАБУДЬТЕ ОТРЕДАКТИРОВАТЬ config.py
+
 $ docker build -t rush/parse_bot .
 ```
 
@@ -44,3 +47,11 @@ $ docker run -it rush/parse_bot
 Изменен atbot.py:
 - Добавлена автоматическая сборка адресов и постоянная проверка на появление новых товаров
 - Изменено приветствие
+
+5.09.2022
+
+Изменен atbot.py:
+- Добавлены кнопки товаров, чтобы было удобнее смотреть их наличие.
+
+Изменен README.md
+- Внесены изменения в инструкцию по развертыванию бота
