@@ -24,21 +24,28 @@ db.create()
 
 @dp.message_handler(commands=['start', 'help'])
 async def send_welcome(message: types.Message):
+    name = await bot.get_me()
     
     newline = "\n"
     """
     Это сообщение будет выходить при вызове команды /start или /help
     """
     await message.reply(f''' 
-    Привет. Это *****!
+    Привет. Это {name['first_name']}!
     Подпишись на меня и тогда тебе будут приходить сообщения о поступлении товара.
     Также в любой момент ты можешь проверить наличие товара в магазине.
-    Для этого тебе просто надо отправить сообщение с цифрой из списка:
+    Список отслеживаемых товаров:
     
     {newline.join(f"{key}: {value}" for key, value in name_dict.items())}
     
     Удачи!
                             ''')
+    
+    keyboard = types.ReplyKeyboardMarkup()
+    for key, value in name_dict.items():
+        key = types.KeyboardButton(text = value)
+        keyboard.add(key)
+    await message.answer("Выберите, что хотите проверить?", reply_markup=keyboard)
 
 # Команда активации подписки
 @dp.message_handler(commands=['subscribe'])
@@ -65,7 +72,7 @@ async def unsubscribe(message: types.Message):
     else:
         # если он уже есть, то просто обновляем ему статус подписки
         db.update_subscription(message.from_user.id, False)
-        await message.answer("*****")
+        await message.answer("Вы отписались от бота. Теперь вам не придет оповещение в случае появления товара в магазине")
 
 
 # Вход на сайт
@@ -86,11 +93,20 @@ def make_name_dict(addr):
         name_dict[i] = name_check
     return name_dict
 
+# Функция получения ключа из словаря по значению
+def get_key(val):
+    for key, value in name_dict.items():
+        if val == value:
+            return key
+
+    return val
+
 # Проверяем наличие товара в магазине в данный момент
 @dp.message_handler()
 async def choose_parse(message: types.Message):
 
     input_parse = message.text
+    input_parse = get_key(input_parse)
     # print(input_parse) # для проверки работы парсера
     if int(input_parse) in addr:
         try:
@@ -99,7 +115,8 @@ async def choose_parse(message: types.Message):
         except:
             name_check, in_stock_check, price_check, button_check = parse_site(addr[int(input_parse)], br)
 
-        print(name_check, in_stock_check, addr[int(input_parse)], price_check) # для проверки вывода информации
+        # print(name_check, in_stock_check, addr[int(input_parse)], price_check) # для проверки вывода информации
+        
         await message.answer(f'{name_check} {in_stock_check} {addr[int(input_parse)]} {price_check}€')
 
     else:
@@ -129,8 +146,8 @@ async def scheduled(wait_for, addr):
             subscriptions = db.get_subscriptions()
             for s in subscriptions:
                 await bot.send_message(s[1], f'‼️‼️{name_check} {in_stock_check} {addr} {price_check}€‼️‼️')
-        else:
-            print(f'none {addr}') # для проверки работы программы
+        # else:
+        #     print(f'none {addr}') # для проверки работы программы
 
 
 
